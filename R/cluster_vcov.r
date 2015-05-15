@@ -163,7 +163,7 @@ cluster.vcov <- function(model, cluster = NULL, cluster.varname = NULL,
   } else {
     if (!all(cluster.varname %in% names(model$model)))
       stop("All values of cluster.varname must be variables in the data.frame stored in model.")
-    cluster <- model$model[, cluster.varname]
+    cluster <- as.data.frame(model$model[, cluster.varname])
   }
   
   cluster_dims <- ncol(cluster)
@@ -185,7 +185,7 @@ cluster.vcov <- function(model, cluster = NULL, cluster.varname = NULL,
   if(debug) print(acc)
   
   # Handle omitted or excluded observations
-  if(!is.null(model$na.action)) {
+  if(!is.null(model$na.action) && is.null(cluster)) {
     if(class(model$na.action) == "exclude") {
       cluster <- cluster[-model$na.action,]
       esttmp <- estfun(model)[-model$na.action,]
