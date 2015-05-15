@@ -8,6 +8,8 @@
 #' where each column is a separate variable.  If the vector \code{1:nrow(data)}
 #' is used, the function effectively produces a regular 
 #' heteroskedasticity-robust matrix.
+#' @param cluster.varnames A character vector of variable names from the fitted
+#' model to use as cluster variables.  Can be specified instead of cluster.
 #' @param parallel Scalar or list.  If a list, use the list as a list
 #' of connected processing cores/clusters.  A scalar indicates no
 #' parallelization.  See the \bold{parallel} package.
@@ -143,13 +145,28 @@
 #' stopCluster(cl)
 #' coeftest(m1, vcov_both)
 #' }
-cluster.vcov <- function(model, cluster, parallel = FALSE, use_white = NULL, 
+cluster.vcov <- function(model, cluster = NULL, cluster.varname = NULL,
+                         parallel = FALSE, use_white = NULL, 
                          df_correction = TRUE, leverage = FALSE, force_posdef = FALSE,
                          debug = FALSE) {
   
-  cluster <- as.data.frame(cluster)
-  cluster_dims <- ncol(cluster)
+  # Error checking inputs
+  if (is.null(cluster) && is.null(cluster.varname))
+    stop("Either cluster or cluster.varname must be specified.")
   
+  # If cluster.varnames isn't specified, the save the cluster as a data.frame
+  if (is.null(cluster.varname)) {
+    cluster <- as.data.frame(cluster)
+    
+  # If cluster.varnames *is* specified, pull the vectors from the data.frame
+  # saved with the model
+  } else {
+    if (!all(cluster.varname %in% names(model$model)))
+      stop("All values of cluster.varname must be variables in the data.frame stored in model.")
+    cluster <- model$model[, cluster.varname]
+  }
+  
+  cluster_dims <- ncol(cluster)
   # total cluster combinations, 2^D - 1
   tcc <- 2 ** cluster_dims - 1
   # all cluster combinations
